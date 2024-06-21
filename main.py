@@ -33,8 +33,8 @@ def generate_pem(keystore_p12):
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile):
     contents = await file.read()
-    os.mkdir('upload')
-    with open("upload/"+ file.filename, "wb") as f:
+    os.mkdir('uploads')
+    with open("uploads/"+ file.filename, "wb") as f:
         f.write(contents)
     return {"filename": file.filename}
 
