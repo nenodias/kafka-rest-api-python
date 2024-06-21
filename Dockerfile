@@ -7,7 +7,7 @@ ENV LC_ALL en_US.UTF-8
 EXPOSE 8080
 RUN groupadd -r app -g 65536 && useradd --no-log-init -u 65536 -r -g app app -m -d /app
 
-RUN apt update -y && apt install build-essential -y
+RUN apt update -y && apt install build-essential openssl -y
 
 USER app
 WORKDIR /app
