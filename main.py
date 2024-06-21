@@ -25,6 +25,10 @@ def generate_pem(keystore_p12):
     subprocess.call(f"openssl pkcs12 -in uploads/{keystore_p12} -out uploads/{output_caroot}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
     print(f"openssl pkcs12 -in uploads/{keystore_p12} -nodes -nocerts -out uploads/{output_rsakey}")
     subprocess.call(f"openssl pkcs12 -in uploads/{keystore_p12} -nodes -nocerts -out uploads/{output_rsakey}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
+    # Move
+    subprocess.call(f"mv uploads/{output_caroot} certs/{output_caroot}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
+    subprocess.call(f"mv uploads/{output_rsakey} certs/{output_rsakey}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
+    
 
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile):
@@ -37,7 +41,7 @@ async def create_upload_file(file: UploadFile):
 @app.post("/generate-cert")
 async def generate_cert(dto: GenerateCert):
     generate_pem(dto.certname)
-    return {"filename": ""}
+    return {"success": True}
 
 if __name__ == "__main__":
     import uvicorn
