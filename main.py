@@ -3,9 +3,11 @@ import subprocess
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile
 from app.infraestructure.web import post_on_topic
+from app.infraestructure.criptografia import build_ca_pems, build_rsa_pems
 
 class GenerateCert(BaseModel):
     certname: str
+    password: str
 
 app = FastAPI(title="KafkaRest API",
     description="KafkaRest",
@@ -17,30 +19,26 @@ app = FastAPI(title="KafkaRest API",
 
 post_on_topic = app.post("/topic")(post_on_topic)
 
-def generate_pem(keystore_p12):
-    output_suffix = keystore_p12.replace("_keystore.p12", "")
-    output_caroot = f"{output_suffix}_caroot.pem"
-    output_rsakey = f"{output_suffix}_rsakey.pem"
-    print(f"openssl pkcs12 -in uploads/{keystore_p12} -out uploads/{output_caroot}")
-    subprocess.call(f"openssl pkcs12 -in uploads/{keystore_p12} -out uploads/{output_caroot}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
-    print(f"openssl pkcs12 -in uploads/{keystore_p12} -nodes -nocerts -out uploads/{output_rsakey}")
-    subprocess.call(f"openssl pkcs12 -in uploads/{keystore_p12} -nodes -nocerts -out uploads/{output_rsakey}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
-    # Move
-    subprocess.call(f"mv uploads/{output_caroot} certs/{output_caroot}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
-    subprocess.call(f"mv uploads/{output_rsakey} certs/{output_rsakey}", shell=True, stderr=subprocess.STDOUT, executable="/bin/bash")
+def generate_pem(keystore_p12: str, password: str):
+    prefix = os.getcwd() + os.sep + "uploads" + os.sep
+    password_bytes = password.encode()
+    
+    
+    build_ca_pems(prefix + keystore_p12, password_bytes)
+    build_rsa_pems(prefix + keystore_p12, password_bytes)
     
 
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile):
     contents = await file.read()
-    os.mkdir('uploads')
+    os.makedirs('uploads', exist_ok=True)
     with open("uploads/"+ file.filename, "wb") as f:
         f.write(contents)
     return {"filename": file.filename}
 
 @app.post("/generate-cert")
 async def generate_cert(dto: GenerateCert):
-    generate_pem(dto.certname)
+    generate_pem(dto.certname, dto.password)
     return {"success": True}
 
 if __name__ == "__main__":
